@@ -1,0 +1,17 @@
+{
+  "name": "quota-dock",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@quota-dock/desktop",
+    "desktop": "npm run tauri:dev --workspace=@quota-dock/desktop",
+    "release": "npm run tauri:build --workspace=@quota-dock/desktop"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
