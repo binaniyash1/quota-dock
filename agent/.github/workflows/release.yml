@@ -1,0 +1,47 @@
+# COPY THIS FILE TO: .github/workflows/release.yml on GitHub
+# Then go to Actions → Release → Run workflow
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Create app icons
+        run: |
+          brew install imagemagick
+          mkdir -p apps/desktop/src-tauri/icons
+          magick -size 512x512 xc:'#7C3AED' \
+            -fill white -gravity center -pointsize 180 -annotate 0 'QD' \
+            apps/desktop/src-tauri/icons/icon.png
+          for size in 32 128; do
+            magick apps/desktop/src-tauri/icons/icon.png -resize ${size}x${size} \
+              apps/desktop/src-tauri/icons/${size}x${size}.png
+          done
+          cp apps/desktop/src-tauri/icons/128x128.png apps/desktop/src-tauri/icons/128x128@2x.png
+          cp apps/desktop/src-tauri/icons/icon.png apps/desktop/src-tauri/icons/icon.icns 2>/dev/null || true
+          cp apps/desktop/src-tauri/icons/icon.png apps/desktop/src-tauri/icons/icon.ico 2>/dev/null || true
+      - name: Install dependencies
+        run: npm install
+      - name: Build macOS Apple Silicon app
+        run: npm run release
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: quota-dock-macos-arm64
+          path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
