@@ -1,0 +1,38 @@
+version: 2.1
+
+jobs:
+  build-macos:
+    macos:
+      xcode: "15.4.0"
+    resource_class: m4pro.medium
+    steps:
+      - checkout
+      - run:
+          name: Install Node
+          command: |
+            brew install node@22
+            echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> $BASH_ENV
+      - run:
+          name: Install Rust
+          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env
+      - run:
+          name: Create icons
+          command: |
+            brew install imagemagick
+            mkdir -p apps/desktop/src-tauri/icons
+            magick -size 512x512 xc:'#7C3AED' -fill white -gravity center -pointsize 180 -annotate 0 'QD' apps/desktop/src-tauri/icons/icon.png
+            for size in 32 128; do magick apps/desktop/src-tauri/icons/icon.png -resize ${size}x${size} apps/desktop/src-tauri/icons/${size}x${size}.png; done
+            cp apps/desktop/src-tauri/icons/128x128.png apps/desktop/src-tauri/icons/128x128@2x.png
+      - run:
+          name: Build Quota Dock
+          command: |
+            source $HOME/.cargo/env
+            npm install
+            npm run release
+      - store_artifacts:
+          path: apps/desktop/src-tauri/target/release/bundle/dmg
+
+workflows:
+  build:
+    jobs:
+      - build-macos
